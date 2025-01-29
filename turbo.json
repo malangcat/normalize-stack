@@ -6,16 +6,14 @@
       "dependsOn": ["^build"]
     },
     "dev": {
-      "dependsOn": ["dev:js", "dev:dts", "^dev"],
+      "dependsOn": ["dev:js", "dev:dts"],
       "persistent": true,
       "cache": false
     },
     "dev:js": {
-      "dependsOn": ["^dev:js"],
       "cache": false
     },
     "dev:dts": {
-      "dependsOn": ["^dev:dts"],
       "cache": false
     }
   }

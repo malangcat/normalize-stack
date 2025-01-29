@@ -3,7 +3,7 @@
   "private": true,
   "scripts": {
     "build": "turbo run build --filter='!./examples/**'",
-    "dev": "turbo watch dev",
+    "dev": "turbo run dev",
     "lint": "biome check --staged",
     "release": "bun run build && bun run changeset publish",
     "version": "bun run changeset version",
