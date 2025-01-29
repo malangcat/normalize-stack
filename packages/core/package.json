@@ -3,7 +3,8 @@
   "version": "0.0.0",
   "scripts": {
     "build": "bun run ./build.mjs && tsc",
-    "dev": "bun run ./build.mjs && tsc"
+    "dev:js": "bun run ./dev.mjs",
+    "dev:dts": "bun run tsc -w"
   },
   "exports": {
     ".": {
