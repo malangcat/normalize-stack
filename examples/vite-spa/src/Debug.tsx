@@ -17,6 +17,12 @@ export function Debug() {
         Matched routes: {top.matchedRoutes.map((r) => r.route.path).join(", ")}
       </p>
 
+      <h2>Flat Activities</h2>
+      <pre>
+        <code>{JSON.stringify(state.flatActivities, null, 2)}</code>
+      </pre>
+
+      <h2>Nested Activities</h2>
       <pre>
         <code>{JSON.stringify(state.activities, null, 2)}</code>
       </pre>

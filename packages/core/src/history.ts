@@ -1,6 +1,6 @@
 import type { History, HistoryEvent, HistoryLocation } from "./types";
 
-function parseLocation(
+export function parseLocation(
   to: string | Partial<HistoryLocation>,
   base: HistoryLocation = { pathname: "/", search: "", hash: "" },
 ): HistoryLocation {

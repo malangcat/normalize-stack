@@ -1,5 +1,7 @@
 import { isDescendant, isSibling } from "./compare-route";
 import { composeActivities } from "./compose-activities";
+import { diffActivities } from "./diff-activities";
+import { parseLocation } from "./history";
 import { matchRoutes } from "./match-route";
 import type {
   Activity,
@@ -17,6 +19,8 @@ export interface NavigatorState {
   location: HistoryLocation;
 }
 
+export const Dismissed: unique symbol = Symbol("Dismissed");
+
 export class Navigator {
   private state: NavigatorState = {
     flatActivities: [],
@@ -27,6 +31,8 @@ export class Navigator {
       hash: "",
     },
   };
+  private resolveMap: Map<string, (x: unknown | typeof Dismissed) => void> =
+    new Map();
   private listeners: Set<() => void> = new Set();
 
   constructor(
@@ -57,6 +63,7 @@ export class Navigator {
 
     // Subscribe to history events & use a small reducer method to update state
     history.subscribe((event: HistoryEvent) => {
+      this.logger?.log(event);
       this.setActivities(
         this.reduceFlatActivities(this.state.flatActivities, event),
       );
@@ -68,10 +75,17 @@ export class Navigator {
    * Set activities and update the derived state.
    */
   private setActivities(flatActivities: FlatActivity[]) {
+    const activities = composeActivities(flatActivities);
+    const diff = diffActivities(this.state.activities, activities);
+    diff.removed.forEach((path) => {
+      this.resolveMap.get(path)?.(Dismissed);
+      this.resolveMap.delete(path);
+    });
+
     this.state = {
       ...this.state,
       flatActivities,
-      activities: composeActivities(flatActivities),
+      activities,
       location: this.history.getCurrentLocation(),
     };
   }
@@ -84,8 +98,6 @@ export class Navigator {
     prev: FlatActivity[],
     event: HistoryEvent,
   ): FlatActivity[] {
-    this.logger?.log(event);
-
     const top = prev[prev.length - 1]!;
     if (top.pathname !== event.from.pathname) {
       throw new Error(
@@ -132,17 +144,17 @@ export class Navigator {
       case "REPLACE": {
         const matchedRoutes = matchRoutes(this.routes, event.to.pathname);
         const lastIndex = prev.length - 1;
-        const beforeLastIndex = prev.length - 2;
+        const replaceIndex = prev
+          .slice(0, -1)
+          .findIndex(
+            (a) =>
+              isDescendant(a.matchedRoutes, matchedRoutes) ||
+              isSibling(a.matchedRoutes, matchedRoutes),
+          );
 
-        const activityBeforeReplace = prev[beforeLastIndex];
-
-        if (
-          activityBeforeReplace &&
-          !isDescendant(activityBeforeReplace.matchedRoutes, matchedRoutes) &&
-          !isSibling(activityBeforeReplace.matchedRoutes, matchedRoutes)
-        ) {
+        if (replaceIndex !== -1 && replaceIndex < lastIndex - 1) {
           throw new Error(
-            "replace: Replaced activity must be a sibling or a descendant of the previous activity.",
+            "replace: Parent activity is present but not at the top of the stack. You must pop to a parent activity first.",
           );
         }
 
@@ -161,12 +173,20 @@ export class Navigator {
     }
   }
 
-  // Imperative navigation methods delegate to the underlying history
-  push(to: string | Partial<HistoryLocation>) {
+  async push(to: string | Partial<HistoryLocation>) {
     this.history.push(to);
+    const { pathname } = parseLocation(to);
+    return new Promise<unknown>((resolve) => {
+      // TODO: we have to use pathname here instead of JSON.stringify; but I'm lazy
+      this.resolveMap.set(pathname, resolve);
+    });
   }
 
-  pop() {
+  pop(value?: unknown) {
+    const pathname =
+      this.state.flatActivities[this.state.flatActivities.length - 1]!.pathname;
+    this.resolveMap.get(pathname)?.(value);
+    this.resolveMap.delete(pathname);
     this.history.pop();
   }
 
@@ -186,8 +206,10 @@ export class Navigator {
     this.history.go(-count);
   }
 
-  popIndex(gte: number) {
-    this.popUntil((activity) => activity.index >= gte);
+  popFrom(from: string, value?: unknown) {
+    this.resolveMap.get(from)?.(value);
+    this.resolveMap.delete(from);
+    this.popUntil((a) => !!a.matchedRoutes.find((r) => r.fullPath === from));
   }
 
   /** The core store subscription logic */

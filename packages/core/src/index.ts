@@ -5,6 +5,7 @@ export {
 export {
   Navigator,
   type NavigatorState,
+  Dismissed,
 } from "./navigator";
 export type {
   Activity,

@@ -1,8 +1,8 @@
 import {
+  Dismissed,
   Outlet,
   useActivity,
   usePop,
-  usePopThis,
   usePush,
 } from "@normalize-stack/react";
 
@@ -29,23 +29,33 @@ function Screen(props: { children: React.ReactNode }) {
 export function Main() {
   const push = usePush();
 
+  const handleFunnelPush = async () => {
+    const result = await push("/funnel");
+    if (result === Dismissed) {
+      window.alert("Push Dismissed");
+    } else {
+      window.alert(`Push Callback: ${result}`);
+    }
+  };
+
   return (
     <Screen>
       <h1>Main</h1>
       <p>This is the main page.</p>
-      <button onClick={() => push("/funnel/name")}>Go to Funnel</button>
+      <button onClick={handleFunnelPush}>Go to Funnel</button>
     </Screen>
   );
 }
 
 export function Funnel() {
-  const popThis = usePopThis();
+  const pop = usePop();
 
   return (
     <Outlet
+      initial="/funnel/name"
       activityPropsMap={{
         "/funnel/email": {
-          onComplete: () => popThis(),
+          onComplete: () => pop("Hello"),
         },
       }}
     />

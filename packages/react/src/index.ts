@@ -1,4 +1,4 @@
-export { createHistoryNavigator } from "@normalize-stack/core";
+export { Dismissed, createHistoryNavigator } from "@normalize-stack/core";
 export type {
   Navigator,
   NavigatorState,
@@ -11,7 +11,6 @@ export {
   useNavigator,
   useNavigatorState,
   usePop,
-  usePopThis,
   usePush,
   useReplace,
 } from "./context";

@@ -1,9 +1,9 @@
-import { createContext, useContext, useSyncExternalStore } from "react";
 import type {
   Activity,
   Navigator,
   NavigatorState,
 } from "@normalize-stack/core";
+import { createContext, useContext, useSyncExternalStore } from "react";
 
 export const NavigatorContext = createContext<Navigator | null>(null);
 
@@ -69,17 +69,11 @@ export function usePush(): Navigator["push"] {
   return navigator.push;
 }
 
-export function usePop(): Navigator["pop"] {
-  const navigator = useNavigator();
-
-  return navigator.pop;
-}
-
-export function usePopThis() {
+export function usePop() {
   const navigator = useNavigator();
   const activity = useActivity();
 
-  return () => navigator.popIndex(activity.index);
+  return (value?: unknown) => navigator.popFrom(activity.fullPath, value);
 }
 
 export function useReplace(): Navigator["replace"] {

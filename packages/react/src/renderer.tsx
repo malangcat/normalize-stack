@@ -1,18 +1,40 @@
-import type React from "react";
-import { createContext, useContext } from "react";
-import { ActivityContext, useNavigatorState } from "./context";
 import type { Activity } from "@normalize-stack/core";
+import type React from "react";
+import { createContext, useContext, useEffect, useRef } from "react";
+import {
+  ActivityContext,
+  useActivity,
+  useNavigatorState,
+  useReplace,
+} from "./context";
 
 const OutletContext = createContext<React.ReactNode>(null);
 const OutletPropsContext = createContext<OutletProps>({});
 
 export interface OutletProps {
+  initial?: string;
+
   activityPropsMap?: Record<string, unknown>;
 }
 
 /** Consumed by parent route components. */
 export function Outlet(props: OutletProps) {
   const childElement = useContext(OutletContext);
+  const activity = useActivity();
+  const replace = useReplace();
+  const { location } = useNavigatorState();
+  const replacedInitalRef = useRef(false);
+
+  useEffect(() => {
+    if (
+      !replacedInitalRef.current &&
+      props.initial &&
+      activity.fullPath === location.pathname
+    ) {
+      replace(props.initial);
+      replacedInitalRef.current = true;
+    }
+  }, [props.initial, activity.fullPath, location.pathname, replace]);
 
   return (
     <OutletPropsContext.Provider value={props}>
@@ -46,19 +68,13 @@ function RouteWrapper({
 }
 
 function createNestedElements(activity: Activity): React.ReactNode {
-  if (!activity) {
-    return null;
-  }
-
   return (
     <RouteWrapper
       key={activity.fullPath}
       activity={activity}
-      childElement={
-        activity.children.map((child) => {
-          return createNestedElements(child);
-        }) || null
-      }
+      childElement={activity.children.map((child) => {
+        return createNestedElements(child);
+      })}
     />
   );
 }
