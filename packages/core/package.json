@@ -1,0 +1,29 @@
+{
+  "name": "@normalize-stack/core",
+  "version": "0.0.0",
+  "scripts": {
+    "build": "bun run ./build.mjs && tsc",
+    "dev": "bun run ./build.mjs && tsc"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "dependencies": {},
+  "devDependencies": {
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "typescript": "^5.5.4"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  }
+}

@@ -1,0 +1,32 @@
+{
+  "name": "@normalize-stack/react",
+  "version": "0.0.0",
+  "scripts": {
+    "build": "bun run ./build.mjs && tsc",
+    "dev": "bun run ./build.mjs && tsc"
+  },
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "require": "./dist/index.js",
+      "import": "./dist/index.mjs"
+    }
+  },
+  "files": [
+    "dist",
+    "src"
+  ],
+  "dependencies": {
+    "@radix-ui/react-slot": "^1.1.1",
+    "@normalize-stack/core": "0.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "typescript": "^5.5.4"
+  },
+  "peerDependencies": {
+    "react": ">=18",
+    "react-dom": ">=18"
+  }
+}
