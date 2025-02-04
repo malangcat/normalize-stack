@@ -1,30 +1,5 @@
-import {
-  Dismissed,
-  Outlet,
-  useActivity,
-  usePop,
-  usePush,
-} from "@normalize-stack/react";
-
-function Screen(props: { children: React.ReactNode }) {
-  const activity = useActivity();
-
-  return (
-    <div
-      style={{
-        position: "absolute",
-        zIndex: activity.index,
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
-        backgroundColor: "white",
-      }}
-    >
-      {props.children}
-    </div>
-  );
-}
+import { Dismissed, Outlet, usePop, usePush } from "@normalize-stack/react";
+import { AppScreen } from "../ui/AppScreen/AppScreen";
 
 export function Main() {
   const push = usePush();
@@ -39,11 +14,11 @@ export function Main() {
   };
 
   return (
-    <Screen>
+    <AppScreen>
       <h1>Main</h1>
       <p>This is the main page.</p>
       <button onClick={handleFunnelPush}>Go to Funnel</button>
-    </Screen>
+    </AppScreen>
   );
 }
 
@@ -67,12 +42,12 @@ export function FunnelName() {
   const pop = usePop();
 
   return (
-    <Screen>
+    <AppScreen>
       <h1>Funnel Name</h1>
       <p>This is the funnel name page.</p>
       <button onClick={() => pop()}>Back</button>
       <button onClick={() => push("/funnel/email")}>Next</button>
-    </Screen>
+    </AppScreen>
   );
 }
 
@@ -80,20 +55,20 @@ export function FunnelEmail(props: { onComplete: () => void }) {
   const pop = usePop();
 
   return (
-    <Screen>
+    <AppScreen>
       <h1>Funnel Email</h1>
       <p>This is the funnel email page.</p>
       <button onClick={() => pop()}>Back</button>
       <button onClick={() => props.onComplete()}>Complete</button>
-    </Screen>
+    </AppScreen>
   );
 }
 
 export function NotFound() {
   return (
-    <Screen>
+    <AppScreen>
       <h1>Not Found</h1>
       <p>404: Page not found.</p>
-    </Screen>
+    </AppScreen>
   );
 }

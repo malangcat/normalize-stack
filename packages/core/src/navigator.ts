@@ -8,12 +8,14 @@ import type {
   FlatActivity,
   History,
   HistoryEvent,
+  UIEvent,
   HistoryLocation,
   Logger,
   RouteConfig,
 } from "./types";
 
 export interface NavigatorState {
+  activityIndex: number;
   flatActivities: FlatActivity[];
   activities: Activity[];
   location: HistoryLocation;
@@ -23,6 +25,7 @@ export const Dismissed: unique symbol = Symbol("Dismissed");
 
 export class Navigator {
   private state: NavigatorState = {
+    activityIndex: 0,
     flatActivities: [],
     activities: [],
     location: {
@@ -44,64 +47,67 @@ export class Navigator {
     this.push = this.push.bind(this);
     this.pop = this.pop.bind(this);
     this.replace = this.replace.bind(this);
-    this.setActivities = this.setActivities.bind(this);
-    this.reduceFlatActivities = this.reduceFlatActivities.bind(this);
+    this.exitFinished = this.exitFinished.bind(this);
+    this.reduceState = this.reduceState.bind(this);
     this.notify = this.notify.bind(this);
 
     // Initialize state with router’s current location
-    this.setActivities([
-      {
-        depth: 0,
-        index: 0,
-        pathname: history.getCurrentLocation().pathname,
-        matchedRoutes: matchRoutes(
-          this.routes,
-          history.getCurrentLocation().pathname,
-        ),
-      },
-    ]);
+    const initialLocation = history.getCurrentLocation();
+    const initialActivity: FlatActivity = {
+      depth: 0,
+      index: 0,
+      pathname: initialLocation.pathname,
+      matchedRoutes: matchRoutes(routes, initialLocation.pathname),
+    };
+    this.state = {
+      activityIndex: 0,
+      flatActivities: [initialActivity],
+      activities: composeActivities([initialActivity], initialActivity.index),
+      location: initialLocation,
+    };
 
     // Subscribe to history events & use a small reducer method to update state
     history.subscribe((event: HistoryEvent) => {
       this.logger?.log(event);
-      this.setActivities(
-        this.reduceFlatActivities(this.state.flatActivities, event),
-      );
+
+      const nextState = this.reduceState(this.state, event);
+      this.resolveRemovedActivities(this.state, nextState);
+
+      this.state = nextState;
       this.notify();
     });
   }
 
-  /**
-   * Set activities and update the derived state.
-   */
-  private setActivities(flatActivities: FlatActivity[]) {
-    const activities = composeActivities(flatActivities);
-    const diff = diffActivities(this.state.activities, activities);
+  private resolveRemovedActivities(prev: NavigatorState, curr: NavigatorState) {
+    const diff = diffActivities(
+      composeActivities(prev.flatActivities, prev.activityIndex),
+      composeActivities(curr.flatActivities, curr.activityIndex),
+    );
     diff.removed.forEach((path) => {
       this.resolveMap.get(path)?.(Dismissed);
       this.resolveMap.delete(path);
     });
-
-    this.state = {
-      ...this.state,
-      flatActivities,
-      activities,
-      location: this.history.getCurrentLocation(),
-    };
   }
 
   /**
    * Reducer-like method that returns a new activities based on
    * the current activities plus the incoming RouterEvent.
    */
-  private reduceFlatActivities(
-    prev: FlatActivity[],
-    event: HistoryEvent,
-  ): FlatActivity[] {
-    const top = prev[prev.length - 1]!;
-    if (top.pathname !== event.from.pathname) {
+  private reduceState(
+    prev: NavigatorState,
+    event: HistoryEvent | UIEvent,
+  ): NavigatorState {
+    const presentActivities = prev.flatActivities.slice(
+      0,
+      prev.activityIndex + 1,
+    );
+    const top = prev.flatActivities[prev.activityIndex];
+    if (!top) {
+      throw new Error("reduceState: No top activity found.");
+    }
+    if ("from" in event && top.pathname !== event.from.pathname) {
       throw new Error(
-        "reduceActivities: Location mismatch; top activity's pathname is different with event.from.pathname.",
+        "reduceState: Location mismatch; top activity's pathname is different with event.from.pathname.",
       );
     }
 
@@ -115,36 +121,52 @@ export class Navigator {
           matchedRoutes,
         };
 
-        const pushIndex = prev.findIndex(
+        const pushIndex = presentActivities.findIndex(
           (a) =>
             isDescendant(a.matchedRoutes, matchedRoutes) ||
             isSibling(a.matchedRoutes, matchedRoutes),
         );
 
-        if (pushIndex !== -1 && pushIndex < prev.length - 1) {
+        if (pushIndex !== -1 && pushIndex < presentActivities.length - 1) {
           throw new Error(
             "push: Parent activity is present but not at the top of the stack. You must pop to a parent activity first.",
           );
         }
 
-        return [...prev, newActivity];
+        return {
+          activityIndex: newActivity.index,
+          flatActivities: [...presentActivities, newActivity],
+          activities: composeActivities(
+            [...presentActivities, newActivity],
+            newActivity.index,
+          ),
+          location: event.to,
+        };
       }
       case "POP": {
-        if (prev.length === 1) {
+        if (presentActivities.length === 1) {
           this.logger?.log("pop: Cannot pop the last activity.");
         }
 
-        const index = prev.findIndex((a) => a.pathname === event.to.pathname);
+        const index = presentActivities.findIndex(
+          (a) => a.pathname === event.to.pathname,
+        );
         if (index === -1) {
           throw new Error("pop: No matching activity found for pop event.");
         }
 
-        return prev.slice(0, index + 1);
+        // We don't remove activity now, just update the index. Activities will be removed on UIEvent.EXIT_FINISHED.
+        return {
+          activityIndex: index,
+          flatActivities: prev.flatActivities,
+          activities: composeActivities(prev.flatActivities, index),
+          location: event.to,
+        };
       }
       case "REPLACE": {
         const matchedRoutes = matchRoutes(this.routes, event.to.pathname);
-        const lastIndex = prev.length - 1;
-        const replaceIndex = prev
+        const lastIndex = presentActivities.length - 1;
+        const replaceIndex = presentActivities
           .slice(0, -1)
           .findIndex(
             (a) =>
@@ -160,12 +182,28 @@ export class Navigator {
 
         const replacedActivity: FlatActivity = {
           depth: matchedRoutes.length - 1,
-          index: prev[lastIndex]!.index,
+          index: presentActivities[lastIndex]!.index,
           pathname: event.to.pathname,
           matchedRoutes,
         };
 
-        return [...prev.slice(0, lastIndex), replacedActivity];
+        return {
+          activityIndex: replacedActivity.index,
+          flatActivities: [...presentActivities.slice(0, -1), replacedActivity],
+          activities: composeActivities(
+            [...presentActivities.slice(0, -1), replacedActivity],
+            replacedActivity.index,
+          ),
+          location: event.to,
+        };
+      }
+      case "EXIT_FINISHED": {
+        return {
+          activityIndex: prev.activityIndex,
+          flatActivities: presentActivities,
+          activities: composeActivities(presentActivities, prev.activityIndex),
+          location: prev.location,
+        };
       }
       default:
         // Unknown event type, return prev unchanged
@@ -210,6 +248,11 @@ export class Navigator {
     this.resolveMap.get(from)?.(value);
     this.resolveMap.delete(from);
     this.popUntil((a) => !!a.matchedRoutes.find((r) => r.fullPath === from));
+  }
+
+  exitFinished() {
+    this.state = this.reduceState(this.state, { type: "EXIT_FINISHED" });
+    this.notify();
   }
 
   /** The core store subscription logic */

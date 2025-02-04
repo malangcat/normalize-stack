@@ -13,6 +13,10 @@ export interface HistoryEvent {
   to: HistoryLocation;
 }
 
+export interface UIEvent {
+  type: "EXIT_FINISHED";
+}
+
 /**
  * string inputs are internally converted to RouterLocation.
  */
@@ -56,6 +60,8 @@ export interface Activity {
   depth: number;
 
   index: number;
+
+  isPresent: boolean;
 
   render: (props?: any) => any;
 

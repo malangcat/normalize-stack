@@ -1,6 +1,9 @@
 import type { Activity, FlatActivity } from "./types";
 
-export function composeActivities(flatActivities: FlatActivity[]): Activity[] {
+export function composeActivities(
+  flatActivities: FlatActivity[],
+  activityIndex: number,
+): Activity[] {
   const activities: Activity[] = [];
 
   for (const { matchedRoutes, index } of flatActivities) {
@@ -16,6 +19,7 @@ export function composeActivities(flatActivities: FlatActivity[]): Activity[] {
           fullPath: matched.fullPath,
           depth: i,
           index,
+          isPresent: index <= activityIndex,
           render: matched.route.render,
           children: [],
         };

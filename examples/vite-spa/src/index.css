@@ -1,0 +1,17 @@
+@keyframes stack-enter {
+    from {
+      opacity: var(--stack-enter-opacity, 1);
+      transform: translate3d(var(--stack-enter-translate-x, 0), var(--stack-enter-translate-y, 0), 0)
+        scale3d(var(--stack-enter-scale, 1), var(--stack-enter-scale, 1), var(--stack-enter-scale, 1))
+        rotate(var(--stack-enter-rotate, 0));
+    }
+  }
+  
+  @keyframes stack-exit {
+    to {
+      opacity: var(--stack-exit-opacity, 1);
+      transform: translate3d(var(--stack-exit-translate-x, 0), var(--stack-exit-translate-y, 0), 0)
+        scale3d(var(--stack-exit-scale, 1), var(--stack-exit-scale, 1), var(--stack-exit-scale, 1))
+        rotate(var(--stack-exit-rotate, 0));
+    }
+  }

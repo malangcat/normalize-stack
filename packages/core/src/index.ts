@@ -12,6 +12,7 @@ export type {
   FlatActivity,
   History,
   HistoryEvent,
+  UIEvent,
   HistoryLocation,
   Logger,
   RouteConfig,

@@ -13,6 +13,7 @@ export function Debug() {
       <p>Pathname: {state.location.pathname}</p>
       <p>Search: {state.location.search}</p>
       <p>Hash: {state.location.hash}</p>
+      <p>Index: {state.activityIndex}</p>
       <p>
         Matched routes: {top.matchedRoutes.map((r) => r.route.path).join(", ")}
       </p>
