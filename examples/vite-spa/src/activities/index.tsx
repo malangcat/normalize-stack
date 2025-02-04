@@ -1,5 +1,5 @@
 import { Dismissed, Outlet, usePop, usePush } from "@normalize-stack/react";
-import { AppScreen } from "../ui/AppScreen/AppScreen";
+import { AppScreen } from "../ui/AppScreen";
 
 export function Main() {
   const push = usePush();

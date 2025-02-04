@@ -26,6 +26,7 @@ const transitions = {
   },
 } as const;
 
+// TODO: 귀찮아서 여기다가 둠. react-navigator와 react-ui 패키지는 분리해야 할 가능성이 높음.
 export function usePresence(props: UsePresenceProps) {
   const { present, onUnmount } = props;
 

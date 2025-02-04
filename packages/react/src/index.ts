@@ -16,3 +16,5 @@ export {
 } from "./context";
 export { NavigationRoot, type NavigationRootProps } from "./navigation-root";
 export { Outlet, StackRenderer } from "./renderer";
+
+export { usePresence } from "./usePresence";

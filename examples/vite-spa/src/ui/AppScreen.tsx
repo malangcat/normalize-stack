@@ -1,7 +1,5 @@
-import { useActivity, useNavigator } from "@normalize-stack/react";
+import { useActivity, useNavigator, usePresence } from "@normalize-stack/react";
 import type * as React from "react";
-import { usePresence } from "../Presence/usePresence";
-import { flushSync } from "react-dom";
 
 export interface AppScreenProps extends React.HTMLAttributes<HTMLDivElement> {}
 
@@ -25,9 +23,7 @@ export function AppScreen(props: { children: React.ReactNode }) {
   const { ref } = usePresence({
     present: activity.isPresent,
     onUnmount: () => {
-      flushSync(() => {
-        exitFinished();
-      });
+      exitFinished();
     },
   });
 
@@ -42,7 +38,11 @@ export function AppScreen(props: { children: React.ReactNode }) {
         right: 0,
         bottom: 0,
         backgroundColor: "white",
-        ...(activity.isPresent ? enterStyle : exitStyle),
+        ...(activity.isPresent
+          ? activity.index > 0
+            ? enterStyle
+            : undefined
+          : exitStyle),
       }}
     >
       {props.children}
